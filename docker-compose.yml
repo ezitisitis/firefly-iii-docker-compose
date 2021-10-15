@@ -1,0 +1,35 @@
+version: "3.8"
+
+networks:
+  traefik_proxy:
+    external: true
+  mysql57_backend:
+    external: true
+
+volumes:
+  firefly_iii_upload:
+
+services:
+  app:
+    image: fireflyiii/core:latest
+    restart: always
+    volumes:
+      - firefly_iii_upload:/var/www/html/storage/upload
+    env_file: .env
+    expose:
+      - 80
+    depends_on:
+      - mysql57_backend
+    networks:
+      - traefik_proxy
+      - mysql57_backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.firefly.entrypoints=http"
+      - "traefik.http.routers.firefly.rule=Host(`firefly.localhost`)"
+      - "traefik.http.routers.firefly.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.firefly-secure.entrypoints=https"
+      - "traefik.http.routers.firefly-secure.rule=Host(`firefly.localhost`)"
+      - "traefik.http.routers.firefly-secure.tls.certresolver=http"
+      - "traefik.http.services.firefly.loadbalancer.server.port=8080"
